@@ -31,6 +31,11 @@
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: $radius-md;
   padding: $spacing-sm $spacing-md;
+  transition: all $transition-base;
+
+  &:active {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
 
   .filterLabel {
     font-size: $font-size-xs;
@@ -43,6 +48,14 @@
     color: $color-text-white;
     font-weight: $font-weight-medium;
     @include text-ellipsis;
+  }
+
+  &.filterItemDisabled {
+    background-color: rgba(0, 0, 0, 0.15);
+
+    .filterValue {
+      color: rgba(255, 255, 255, 0.6);
+    }
   }
 }
 

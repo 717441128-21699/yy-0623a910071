@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Button, Image } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import classnames from 'classnames';
 import StatusBadge from '@/components/StatusBadge';
 import RiskTag from '@/components/RiskTag';
-import { tickets } from '@/data/tickets';
 import { EscalationTicket, TicketStatus, TicketPriority } from '@/types';
+import useAppStore from '@/store/useAppStore';
 import styles from './index.module.scss';
 
 type FilterStatus = 'all' | TicketStatus;
@@ -17,74 +17,109 @@ const statusFilterList: { key: FilterStatus; label: string }[] = [
   { key: 'compensated', label: '已补偿' },
 ];
 
-const priorityTextMap = {
+const priorityTextMap: Record<TicketPriority, string> = {
   high: '高优先级',
   medium: '中优先级',
   low: '低优先级',
 };
 
 const EscalationTicketPage: React.FC = () => {
+  const tickets = useAppStore(state => state.tickets);
+  const updateTicketStatus = useAppStore(state => state.updateTicketStatus);
+  const updateTicketCompensation = useAppStore(state => state.updateTicketCompensation);
+
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
 
-  const filteredTickets = useMemo(() => {
-    let result = [...tickets];
-
-    if (activeFilter !== 'all') {
-      result = result.filter(t => t.status === activeFilter);
-    }
-
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    result.sort((a, b) => priorityOrder[a.riskLevel] - priorityOrder[b.riskLevel]);
-
-    return result;
-  }, [activeFilter]);
-
   const statusCounts = useMemo(() => {
-    const counts = {
+    const counts: Record<string, number> = {
       all: tickets.length,
       pending: 0,
       replied: 0,
       compensated: 0,
       closed: 0,
     };
-
     tickets.forEach(t => {
       counts[t.status]++;
     });
-
     return counts;
-  }, []);
+  }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    let result = [...tickets];
+    if (activeFilter !== 'all') {
+      result = result.filter(t => t.status === activeFilter);
+    }
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    result.sort((a, b) => {
+      if (priorityOrder[a.riskLevel] !== priorityOrder[b.riskLevel]) {
+        return priorityOrder[a.riskLevel] - priorityOrder[b.riskLevel];
+      }
+      return new Date(b.createTime).getTime() - new Date(a.createTime).getTime();
+    });
+    return result;
+  }, [tickets, activeFilter]);
+
+  usePullDownRefresh(() => {
+    setTimeout(() => {
+      Taro.stopPullDownRefresh();
+    }, 300);
+  });
 
   const handleTicketClick = (ticket: EscalationTicket) => {
     console.log('[Escalation] 查看工单详情:', ticket.id);
-    Taro.showToast({ title: '查看详情', icon: 'none' });
+    const lines = [
+      `工单ID: ${ticket.id}`,
+      `创建时间: ${ticket.createTime}`,
+      `更新时间: ${ticket.updateTime}`,
+      `负责人: ${ticket.assignee}`,
+    ];
+    if (ticket.remark) {
+      lines.push(`备注: ${ticket.remark}`);
+    }
+    Taro.showModal({
+      title: '工单详情',
+      content: lines.join('\n'),
+      showCancel: false,
+    });
   };
 
   const handleStatusChange = (ticket: EscalationTicket, newStatus: TicketStatus) => {
+    const statusTextMap: Record<TicketStatus, string> = {
+      replied: '已回复',
+      pending: '待核实',
+      compensated: '已补偿',
+      closed: '已关闭',
+    };
     Taro.showModal({
       title: '确认操作',
-      content: `确定要将工单状态改为"${newStatus === 'replied' ? '已回复' : newStatus === 'compensated' ? '已补偿' : '待核实'}"吗？`,
+      content: `确定要将工单状态改为"${statusTextMap[newStatus]}"吗？`,
       success: (res) => {
         if (res.confirm) {
+          updateTicketStatus(ticket.id, newStatus);
           Taro.showToast({ title: '状态已更新', icon: 'success' });
-          console.log('[Escalation] 更新工单状态:', ticket.id, newStatus);
         }
       },
     });
   };
 
   const handleCompensate = (ticket: EscalationTicket) => {
+    const options = [
+      { label: '50元优惠券', value: 50 },
+      { label: '100元优惠券', value: 100 },
+      { label: '200元现金补偿', value: 200 },
+      { label: '500元现金补偿', value: 500 },
+    ];
     Taro.showActionSheet({
-      itemList: ['50元优惠券', '100元优惠券', '200元现金补偿', '500元现金补偿'],
+      itemList: options.map(o => o.label),
       success: (res) => {
-        const amounts = [50, 100, 200, 500];
+        const selected = options[res.tapIndex];
         Taro.showModal({
           title: '确认补偿',
-          content: `确定补偿 ${amounts[res.tapIndex]} 元吗？`,
+          content: `确定补偿 ${selected.value} 元吗？`,
           success: (modalRes) => {
             if (modalRes.confirm) {
+              updateTicketCompensation(ticket.id, selected.value, 'compensated');
               Taro.showToast({ title: '补偿已发放', icon: 'success' });
-              console.log('[Escalation] 发放补偿:', ticket.id, amounts[res.tapIndex]);
             }
           },
         });
@@ -128,6 +163,18 @@ const EscalationTicketPage: React.FC = () => {
             }}
           >
             <Text className={styles.btnText}>关闭工单</Text>
+          </Button>
+        );
+      case 'closed':
+        return (
+          <Button
+            className={classnames(styles.actionBtn, styles.secondaryAction)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStatusChange(ticket, 'pending');
+            }}
+          >
+            <Text className={styles.btnText}>重新打开</Text>
           </Button>
         );
       default:
@@ -234,7 +281,16 @@ const EscalationTicketPage: React.FC = () => {
         ) : (
           <View className={styles.emptyState}>
             <Text className={styles.emptyIcon}>📋</Text>
-            <Text className={styles.emptyText}>暂无相关工单</Text>
+            <Text className={styles.emptyText}>
+              {activeFilter === 'all'
+                ? '暂无工单数据'
+                : `暂无${statusFilterList.find(f => f.key === activeFilter)?.label}工单`}
+            </Text>
+            {tickets.length > 0 && activeFilter !== 'all' && (
+              <Text style={{ fontSize: 24, color: '#86909C', marginTop: 8, display: 'block' }}>
+                可切换"全部"标签查看其他工单
+              </Text>
+            )}
           </View>
         )}
       </View>
