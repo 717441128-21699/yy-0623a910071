@@ -1,0 +1,282 @@
+@use '@/styles/variables.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 40rpx;
+}
+
+.headerSection {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  padding: $spacing-lg $page-padding $spacing-xl;
+  border-radius: 0 0 32rpx 32rpx;
+  margin-bottom: $spacing-md;
+}
+
+.pageTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  margin-bottom: $spacing-sm;
+}
+
+.statsRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.statItem {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-sm;
+  text-align: center;
+
+  .statCount {
+    font-size: 40rpx;
+    font-weight: $font-weight-bold;
+    color: $color-text-white;
+    line-height: 1.2;
+  }
+
+  .statLabel {
+    font-size: $font-size-xs;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 4rpx;
+  }
+}
+
+.filterTabs {
+  display: flex;
+  padding: 0 $page-padding;
+  margin-bottom: $spacing-md;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  margin: 0 $page-padding $spacing-md;
+  padding: $spacing-xs;
+  box-shadow: $shadow-card;
+}
+
+.filterTab {
+  flex: 1;
+  height: 64rpx;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-base;
+
+  .tabText {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    font-weight: $font-weight-medium;
+  }
+
+  .tabCount {
+    margin-left: 6rpx;
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+
+  &.active {
+    background-color: $color-primary;
+
+    .tabText, .tabCount {
+      color: $color-text-white;
+    }
+  }
+}
+
+.ticketList {
+  padding: 0 $page-padding;
+}
+
+.ticketCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+}
+
+.ticketHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-sm;
+}
+
+.userMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.userNameRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4rpx;
+}
+
+.nickname {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+  max-width: 220rpx;
+}
+
+.mediaBadge {
+  background: linear-gradient(135deg, #f53f3f 0%, #ff7d00 100%);
+  padding: 2rpx 10rpx;
+  border-radius: 4rpx;
+  margin-left: $spacing-xs;
+
+  .mediaText {
+    font-size: 20rpx;
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.ticketTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.ticketBody {
+  margin-bottom: $spacing-md;
+}
+
+.tagsRow {
+  display: flex;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  margin-bottom: $spacing-sm;
+}
+
+.ticketContent {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+  @include text-ellipsis-multi(3);
+}
+
+.ticketFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.assigneeInfo {
+  display: flex;
+  align-items: center;
+
+  .assigneeLabel {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    margin-right: $spacing-xs;
+  }
+
+  .assigneeName {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.actionBtn {
+  @include button-reset;
+  padding: 0 $spacing-md;
+  height: 56rpx;
+  border-radius: $radius-button;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.96);
+  }
+}
+
+.primaryAction {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+
+  .btnText {
+    color: $color-text-white;
+  }
+}
+
+.secondaryAction {
+  background-color: $color-bg-hover;
+
+  .btnText {
+    color: $color-text-secondary;
+  }
+}
+
+.emptyState {
+  padding: 120rpx 0;
+  text-align: center;
+
+  .emptyIcon {
+    font-size: 80rpx;
+    margin-bottom: $spacing-md;
+  }
+
+  .emptyText {
+    font-size: $font-size-md;
+    color: $color-text-tertiary;
+  }
+}
+
+.priorityDot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: $radius-round;
+  margin-right: 8rpx;
+
+  &.high {
+    background-color: $color-risk-high;
+    box-shadow: 0 0 8rpx $color-risk-high;
+  }
+
+  &.medium {
+    background-color: $color-risk-medium;
+  }
+
+  &.low {
+    background-color: $color-risk-low;
+  }
+}
+
+.compensationBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+  background-color: $color-success-bg;
+  border-radius: $radius-xs;
+
+  .compensationText {
+    font-size: $font-size-xs;
+    color: $color-success;
+    font-weight: $font-weight-medium;
+  }
+}

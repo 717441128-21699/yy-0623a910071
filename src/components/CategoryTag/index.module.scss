@@ -1,0 +1,41 @@
+@use '@/styles/variables.scss' as *;
+
+.categoryTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-xs;
+
+  &.sm {
+    padding: 4rpx 12rpx;
+
+    .tagText {
+      font-size: $font-size-xs;
+      line-height: 1.2;
+    }
+  }
+
+  &.md {
+    padding: 6rpx 16rpx;
+
+    .tagText {
+      font-size: $font-size-sm;
+      line-height: 1.3;
+    }
+  }
+
+  &.safety {
+    background-color: $color-category-safety-bg;
+    color: $color-category-safety;
+  }
+
+  &.refund {
+    background-color: $color-category-refund-bg;
+    color: $color-category-refund;
+  }
+
+  &.distrust {
+    background-color: $color-category-distrust-bg;
+    color: $color-category-distrust;
+  }
+}

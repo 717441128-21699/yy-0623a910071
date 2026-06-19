@@ -1,0 +1,46 @@
+@use '@/styles/variables.scss' as *;
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-round;
+
+  &.sm {
+    padding: 4rpx 16rpx;
+
+    .badgeText {
+      font-size: $font-size-xs;
+      line-height: 1.2;
+    }
+  }
+
+  &.md {
+    padding: 8rpx 20rpx;
+
+    .badgeText {
+      font-size: $font-size-sm;
+      line-height: 1.3;
+    }
+  }
+
+  &.replied {
+    background-color: $color-status-replied-bg;
+    color: $color-status-replied;
+  }
+
+  &.pending {
+    background-color: $color-status-pending-bg;
+    color: $color-status-pending;
+  }
+
+  &.compensated {
+    background-color: $color-status-compensated-bg;
+    color: $color-status-compensated;
+  }
+
+  &.closed {
+    background-color: $color-bg-hover;
+    color: $color-text-tertiary;
+  }
+}

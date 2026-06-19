@@ -1,0 +1,281 @@
+@use '@/styles/variables.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 40rpx;
+}
+
+.headerSection {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  padding: $spacing-lg $page-padding $spacing-xl;
+  border-radius: 0 0 32rpx 32rpx;
+  margin-bottom: -$spacing-xl;
+}
+
+.pageTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  margin-bottom: $spacing-sm;
+}
+
+.pageSubtitle {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.contentSection {
+  padding: 0 $page-padding;
+  margin-top: $spacing-lg;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  margin-top: $spacing-lg;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.sceneTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.sceneTab {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-button;
+  background-color: $color-bg-card;
+  border: 2rpx solid $color-border;
+  transition: all $transition-base;
+
+  .sceneText {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    font-weight: $font-weight-medium;
+  }
+
+  &.active {
+    background-color: $color-primary-bg;
+    border-color: $color-primary;
+
+    .sceneText {
+      color: $color-primary;
+    }
+  }
+
+  &.safety.active {
+    background-color: $color-category-safety-bg;
+    border-color: $color-category-safety;
+
+    .sceneText {
+      color: $color-category-safety;
+    }
+  }
+
+  &.refund.active {
+    background-color: $color-category-refund-bg;
+    border-color: $color-category-refund;
+
+    .sceneText {
+      color: $color-category-refund;
+    }
+  }
+
+  &.distrust.active {
+    background-color: $color-category-distrust-bg;
+    border-color: $color-category-distrust;
+
+    .sceneText {
+      color: $color-category-distrust;
+    }
+  }
+}
+
+.templateList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.templateCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  border: 2rpx solid transparent;
+  transition: all $transition-base;
+
+  &.selected {
+    border-color: $color-primary;
+    background-color: $color-primary-bg;
+  }
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.templateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.templateTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.templateVars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.varTag {
+  padding: 4rpx 12rpx;
+  background-color: $color-bg-hover;
+  border-radius: $radius-xs;
+
+  .varText {
+    font-size: 20rpx;
+    color: $color-text-tertiary;
+  }
+}
+
+.templatePreview {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+  @include text-ellipsis-multi(3);
+}
+
+.variablesSection {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-top: $spacing-md;
+}
+
+.variableItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .varLabel {
+    width: 180rpx;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    flex-shrink: 0;
+  }
+
+  .varValue {
+    flex: 1;
+    font-size: $font-size-sm;
+    color: $color-text-primary;
+    text-align: right;
+    @include text-ellipsis;
+  }
+}
+
+.editBtn {
+  @include button-reset;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-sm;
+  background-color: $color-primary-bg;
+  margin-left: $spacing-sm;
+  flex-shrink: 0;
+
+  .editText {
+    font-size: $font-size-xs;
+    color: $color-primary;
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.previewSection {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-top: $spacing-md;
+}
+
+.previewTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.previewContent {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+  background-color: $color-bg-page;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+}
+
+.actionBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: $color-bg-card;
+  padding: $spacing-md $page-padding;
+  padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+  box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.06);
+  display: flex;
+  gap: $spacing-md;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+.secondaryBtn {
+  background-color: $color-bg-hover;
+
+  .btnText {
+    color: $color-text-secondary;
+  }
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+
+  .btnText {
+    color: $color-text-white;
+  }
+}

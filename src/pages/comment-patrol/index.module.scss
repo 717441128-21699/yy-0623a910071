@@ -1,0 +1,241 @@
+@use '@/styles/variables.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 120rpx;
+}
+
+.filterSection {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  padding: $spacing-lg $page-padding $spacing-xl;
+  border-radius: 0 0 32rpx 32rpx;
+  margin-bottom: $spacing-md;
+}
+
+.pageTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  margin-bottom: $spacing-md;
+}
+
+.filterRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.filterItem {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+
+  .filterLabel {
+    font-size: $font-size-xs;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 4rpx;
+  }
+
+  .filterValue {
+    font-size: $font-size-sm;
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+    @include text-ellipsis;
+  }
+}
+
+.statsSection {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.statCard {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-sm;
+  text-align: center;
+
+  .statCount {
+    font-size: 48rpx;
+    font-weight: $font-weight-bold;
+    color: $color-text-white;
+    line-height: 1.2;
+  }
+
+  .statLabel {
+    font-size: $font-size-xs;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 4rpx;
+  }
+
+  &.safety .statCount {
+    color: #ffece8;
+  }
+
+  &.refund .statCount {
+    color: #fff7e8;
+  }
+
+  &.distrust .statCount {
+    color: #f5e8ff;
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md $page-padding $spacing-sm;
+
+  .sectionTitle {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  .moreText {
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
+}
+
+.repeatSection {
+  margin-bottom: $spacing-md;
+}
+
+.repeatList {
+  padding: 0 $page-padding;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.repeatItem {
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.repeatContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.repeatText {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  @include text-ellipsis;
+}
+
+.repeatCategory {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.repeatBadge {
+  background: linear-gradient(135deg, $color-warning 0%, $color-error 100%);
+  border-radius: $radius-round;
+  padding: 8rpx 20rpx;
+  margin-left: $spacing-md;
+
+  .repeatCount {
+    font-size: $font-size-sm;
+    color: $color-text-white;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.categoryTabs {
+  display: flex;
+  padding: 0 $page-padding;
+  margin-bottom: $spacing-md;
+  gap: $spacing-sm;
+}
+
+.categoryTab {
+  flex: 1;
+  height: 72rpx;
+  border-radius: $radius-button;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-bg-card;
+  border: 2rpx solid $color-border;
+  transition: all $transition-base;
+
+  .tabText {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    font-weight: $font-weight-medium;
+  }
+
+  .tabCount {
+    margin-left: 8rpx;
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+
+  &.active {
+    border-color: $color-primary;
+    background-color: $color-primary-bg;
+
+    .tabText {
+      color: $color-primary;
+    }
+
+    .tabCount {
+      color: $color-primary;
+    }
+  }
+
+  &.safety.active {
+    border-color: $color-category-safety;
+    background-color: $color-category-safety-bg;
+
+    .tabText, .tabCount {
+      color: $color-category-safety;
+    }
+  }
+
+  &.refund.active {
+    border-color: $color-category-refund;
+    background-color: $color-category-refund-bg;
+
+    .tabText, .tabCount {
+      color: $color-category-refund;
+    }
+  }
+
+  &.distrust.active {
+    border-color: $color-category-distrust;
+    background-color: $color-category-distrust-bg;
+
+    .tabText, .tabCount {
+      color: $color-category-distrust;
+    }
+  }
+}
+
+.commentList {
+  padding: 0 $page-padding;
+}
+
+.emptyState {
+  padding: 120rpx 0;
+  text-align: center;
+
+  .emptyText {
+    font-size: $font-size-md;
+    color: $color-text-tertiary;
+  }
+}
