@@ -1,0 +1,469 @@
+@use '@/styles/variables.scss' as *;
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.batchToggleBtn {
+  @include button-reset;
+  padding: 12rpx 24rpx;
+  border-radius: $radius-button;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.batchToggleBtnActive {
+  background-color: $color-text-white;
+}
+
+.batchToggleText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.batchToggleTextActive {
+  color: $color-primary;
+}
+
+.batchQuickBar {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.quickSelectBtn {
+  @include button-reset;
+  padding: 12rpx 24rpx;
+  border-radius: $radius-button;
+  background-color: rgba(255, 255, 255, 0.25);
+
+  &:active {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+.quickSelectText {
+  font-size: $font-size-xs;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.commentWrapper {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+}
+
+.checkbox {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  border: 4rpx solid $color-border;
+  margin-right: $spacing-md;
+  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: $color-bg-card;
+  transition: all $transition-base;
+
+  &:active {
+    border-color: $color-primary;
+  }
+}
+
+.checkboxChecked {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-color: $color-primary;
+}
+
+.checkIcon {
+  font-size: 28rpx;
+  color: $color-text-white;
+  font-weight: $font-weight-bold;
+}
+
+.commentContent {
+  flex-shrink: 1;
+}
+
+.miniCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.miniCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.miniAvatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-sm;
+}
+
+.userMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.userNameRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4rpx;
+}
+
+.nickname {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+  max-width: 260rpx;
+}
+
+.mediaBadge {
+  background: linear-gradient(135deg, #f53f3f 0%, #ff7d00 100%);
+  padding: 2rpx 10rpx;
+  border-radius: 4rpx;
+  margin-left: $spacing-xs;
+
+  .mediaText {
+    font-size: 20rpx;
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.timeText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.tagsRow {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+.typeTag {
+  padding: 4rpx 12rpx;
+  border-radius: $radius-xs;
+
+  .typeText {
+    font-size: $font-size-xs;
+    line-height: 1.2;
+  }
+
+  &.bad {
+    background-color: $color-error-bg;
+    color: $color-error;
+  }
+
+  &.question {
+    background-color: $color-warning-bg;
+    color: $color-warning;
+  }
+
+  &.review {
+    background-color: $color-info-bg;
+    color: $color-info;
+  }
+}
+
+.miniCardBody {
+  margin-bottom: $spacing-md;
+}
+
+.contentText {
+  display: block;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+  margin-top: $spacing-sm;
+}
+
+.imageHint {
+  margin-top: $spacing-sm;
+
+  .imageHintText {
+    font-size: $font-size-xs;
+    color: $color-primary;
+  }
+}
+
+.repeatHint {
+  margin-top: $spacing-sm;
+  background-color: $color-warning-bg;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-sm;
+
+  .repeatHintText {
+    font-size: $font-size-xs;
+    color: $color-warning;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.miniCardFooter {
+  display: flex;
+  gap: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-md;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.secondaryBtn {
+  background-color: $color-bg-hover;
+  border: none;
+
+  .btnText {
+    color: $color-text-secondary;
+  }
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border: none;
+
+  .btnTextPrimary {
+    color: $color-text-white;
+  }
+}
+
+.batchActionBar {
+  position: fixed;
+  bottom: 100rpx;
+  left: $page-padding;
+  right: $page-padding;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md $spacing-lg;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+
+.batchInfo {
+  flex: 1;
+}
+
+.selectedCountText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.selectedCount {
+  font-size: $font-size-lg;
+  color: $color-primary;
+  font-weight: $font-weight-bold;
+}
+
+.batchActionBtn {
+  @include button-reset;
+  height: $button-height-lg;
+  padding: 0 $spacing-xl;
+  border-radius: $radius-button;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+
+  &Disabled {
+    opacity: 0.5;
+    background: $color-bg-hover;
+  }
+}
+
+.batchActionBtnDisabled {
+  opacity: 0.5;
+  background: $color-bg-hover !important;
+}
+
+.batchActionText {
+  font-size: $font-size-md;
+  color: $color-text-white;
+  font-weight: $font-weight-semibold;
+}
+
+.resultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+}
+
+.resultContent {
+  width: 100%;
+  max-width: 600rpx;
+  background-color: $color-bg-card;
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  text-align: center;
+  animation: scaleIn 0.3s ease-out;
+  box-shadow: $shadow-popup;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.resultHeader {
+  margin-bottom: $spacing-lg;
+}
+
+.resultIcon {
+  font-size: 100rpx;
+  display: block;
+  margin-bottom: $spacing-md;
+}
+
+.resultTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  display: block;
+}
+
+.resultStats {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-xl;
+  margin-bottom: $spacing-lg;
+  padding: $spacing-lg 0;
+  border-top: 1rpx solid $color-divider;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.resultStatItem {
+  text-align: center;
+}
+
+.resultStatCountSuccess {
+  font-size: 56rpx;
+  font-weight: $font-weight-bold;
+  color: $color-success;
+  display: block;
+  line-height: 1.2;
+}
+
+.resultStatCountFail {
+  font-size: 56rpx;
+  font-weight: $font-weight-bold;
+  color: $color-warning;
+  display: block;
+  line-height: 1.2;
+}
+
+.resultStatLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  display: block;
+  margin-top: 4rpx;
+}
+
+.resultWarnings {
+  margin-bottom: $spacing-lg;
+  text-align: left;
+}
+
+.warningText {
+  display: block;
+  font-size: $font-size-xs;
+  color: $color-warning;
+  line-height: 1.6;
+  margin-bottom: $spacing-sm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.resultActions {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.resultBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+.resultBtnSecondary {
+  background-color: $color-bg-hover;
+}
+
+.resultBtnSecondaryText {
+  color: $color-text-secondary;
+}
+
+.resultBtnPrimary {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+}
+
+.resultBtnPrimaryText {
+  color: $color-text-white;
+}

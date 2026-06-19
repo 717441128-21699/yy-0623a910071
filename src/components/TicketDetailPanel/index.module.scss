@@ -1,0 +1,493 @@
+@use '@/styles/variables.scss' as *;
+
+.panelOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.panelContainer {
+  width: 100%;
+  height: 90vh;
+  background-color: $color-bg-card;
+  border-radius: $radius-xl $radius-xl 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.closeBtn {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-round;
+  background-color: $color-bg-hover;
+}
+
+.closeText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  line-height: 1;
+}
+
+.panelBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-lg;
+}
+
+.section {
+  margin-bottom: $spacing-xl;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.sectionHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.userHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-md;
+}
+
+.userMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.userNameRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.nickname {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis;
+  max-width: 360rpx;
+}
+
+.mediaBadge {
+  background: linear-gradient(135deg, #f53f3f 0%, #ff7d00 100%);
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+  margin-left: $spacing-sm;
+
+  .mediaText {
+    font-size: 20rpx;
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.createTime {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.tagsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.priorityDot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: $radius-round;
+
+  &.high {
+    background-color: $color-risk-high;
+    box-shadow: 0 0 12rpx $color-risk-high;
+  }
+
+  &.medium {
+    background-color: $color-risk-medium;
+  }
+
+  &.low {
+    background-color: $color-risk-low;
+  }
+}
+
+.imageBadge {
+  padding: 6rpx 14rpx;
+  background-color: #f0f5ff;
+  border-radius: $radius-xs;
+
+  .imageText {
+    font-size: 22rpx;
+    color: $color-primary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.commentContent {
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+}
+
+.commentText {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.infoLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  flex-shrink: 0;
+}
+
+.infoValueRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.infoValue {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  @include text-ellipsis;
+  max-width: 300rpx;
+}
+
+.miniEditBtn {
+  @include button-reset;
+  padding: 6rpx 18rpx;
+  border-radius: $radius-sm;
+  background-color: $color-primary-bg;
+}
+
+.miniEditText {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+.compensationTag {
+  padding: 6rpx 18rpx;
+  background-color: $color-success-bg;
+  border-radius: $radius-sm;
+}
+
+.compensationText {
+  font-size: $font-size-sm;
+  color: $color-success;
+  font-weight: $font-weight-bold;
+}
+
+.remarkContent {
+  background-color: $color-warning-bg;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+}
+
+.remarkText {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+}
+
+.logList {
+  position: relative;
+}
+
+.logItem {
+  position: relative;
+  padding-left: $spacing-xl;
+  padding-bottom: $spacing-lg;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.logDot {
+  position: absolute;
+  left: 0;
+  top: 8rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: $radius-round;
+  background-color: $color-primary;
+  border: 4rpx solid $color-primary-bg;
+  z-index: 1;
+}
+
+.logLine {
+  position: absolute;
+  left: 10rpx;
+  top: 28rpx;
+  width: 2rpx;
+  bottom: 0;
+  background-color: $color-border;
+}
+
+.logContent {
+  flex: 1;
+}
+
+.logHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: 4rpx;
+}
+
+.logIcon {
+  font-size: $font-size-md;
+}
+
+.logAction {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.logOperator {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.logDetail {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+  margin-bottom: 4rpx;
+}
+
+.logChange {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4rpx;
+}
+
+.logOld {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  text-decoration: line-through;
+}
+
+.logArrow {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.logNew {
+  font-size: $font-size-xs;
+  color: $color-success;
+  font-weight: $font-weight-medium;
+}
+
+.logTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.panelFooter {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+  border-top: 1rpx solid $color-divider;
+  background-color: $color-bg-card;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+.actionBtnPrimary {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+}
+
+.btnTextWhite {
+  color: $color-text-white;
+}
+
+.actionBtnSecondary {
+  background-color: $color-bg-hover;
+}
+
+.btnText {
+  color: $color-text-secondary;
+}
+
+.editorOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+}
+
+.editorContainer {
+  width: 100%;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editorHeader {
+  padding: $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.editorTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.editorBody {
+  padding: $spacing-lg;
+  max-height: 400rpx;
+}
+
+.editorTextarea {
+  width: 100%;
+  min-height: 200rpx;
+  padding: $spacing-md;
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+  border: 2rpx solid $color-border;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+  box-sizing: border-box;
+}
+
+.placeholderClass {
+  color: $color-text-disabled;
+  font-size: $font-size-sm;
+}
+
+.editorFooter {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1rpx solid $color-divider;
+}
+
+.editorBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+.editorBtnCancel {
+  background-color: $color-bg-hover;
+}
+
+.editorBtnCancelText {
+  color: $color-text-secondary;
+}
+
+.editorBtnConfirm {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+}
+
+.editorBtnConfirmText {
+  color: $color-text-white;
+}

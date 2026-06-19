@@ -1,24 +1,32 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
-import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro';
+import { View, Text, ScrollView, Button, Image } from '@tarojs/components';
+import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import classnames from 'classnames';
 import CommentCard from '@/components/CommentCard';
 import CategoryTag from '@/components/CategoryTag';
+import RiskTag from '@/components/RiskTag';
 import { shops, products, recallBatches } from '@/data/shops';
-import { Comment, CommentCategory } from '@/types';
+import { Comment, CommentCategory, BatchEscalationResult } from '@/types';
 import useAppStore from '@/store/useAppStore';
 import styles from './index.module.scss';
+import batchStyles from './batch.module.scss';
 
 const CommentPatrolPage: React.FC = () => {
   const getFilteredComments = useAppStore(state => state.getFilteredComments);
   const getCategoryStats = useAppStore(state => state.getCategoryStats);
   const getRepeatPhrases = useAppStore(state => state.getRepeatPhrases);
   const addTicketFromComment = useAppStore(state => state.addTicketFromComment);
+  const batchAddTicketsFromComments = useAppStore(state => state.batchAddTicketsFromComments);
 
   const [selectedShopId, setSelectedShopId] = useState<string>('shop1');
   const [selectedProductId, setSelectedProductId] = useState<string>('prod1');
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CommentCategory | 'all'>('all');
+
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedComments, setSelectedComments] = useState<Set<string>>(new Set());
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [batchResult, setBatchResult] = useState<BatchEscalationResult | null>(null);
 
   const currentShop = useMemo(() => {
     return shops.find(s => s.id === selectedShopId);
@@ -42,14 +50,12 @@ const CommentPatrolPage: React.FC = () => {
     return availableBatches.find(b => b.id === selectedBatchId);
   }, [availableBatches, selectedBatchId]);
 
-  // 切换店铺时，自动选择第一个商品
   useEffect(() => {
     if (availableProducts.length > 0 && !availableProducts.find(p => p.id === selectedProductId)) {
       setSelectedProductId(availableProducts[0].id);
     }
   }, [availableProducts, selectedProductId]);
 
-  // 切换商品时，自动选择第一个批次或清空
   useEffect(() => {
     if (availableBatches.length > 0) {
       if (!selectedBatchId || !availableBatches.find(b => b.id === selectedBatchId)) {
@@ -60,12 +66,17 @@ const CommentPatrolPage: React.FC = () => {
     }
   }, [availableBatches, selectedBatchId]);
 
-  // 初始化批次
   useEffect(() => {
     if (availableBatches.length > 0 && !selectedBatchId) {
       setSelectedBatchId(availableBatches[0].id);
     }
   }, []);
+
+  useEffect(() => {
+    if (!batchMode) {
+      setSelectedComments(new Set());
+    }
+  }, [batchMode]);
 
   const hasValidSelection = !!selectedBatchId;
 
@@ -100,6 +111,10 @@ const CommentPatrolPage: React.FC = () => {
     });
   }, [selectedShopId, selectedProductId, selectedBatchId, activeCategory, hasValidSelection, getFilteredComments]);
 
+  const highRiskComments = useMemo(() => {
+    return filteredComments.filter(c => c.riskLevel === 'high');
+  }, [filteredComments]);
+
   const totalCount = useMemo(() => {
     return categoryStats.reduce((sum, s) => sum + s.count, 0);
   }, [categoryStats]);
@@ -110,7 +125,6 @@ const CommentPatrolPage: React.FC = () => {
       success: (res) => {
         const shop = shops[res.tapIndex];
         setSelectedShopId(shop.id);
-        console.log('[Patrol] 切换店铺:', shop.id);
       },
     });
   };
@@ -126,7 +140,6 @@ const CommentPatrolPage: React.FC = () => {
       success: (res) => {
         const product = availableProducts[res.tapIndex];
         setSelectedProductId(product.id);
-        console.log('[Patrol] 切换商品:', product.id);
       },
     });
   };
@@ -141,7 +154,6 @@ const CommentPatrolPage: React.FC = () => {
       itemList: availableBatches.map(b => b.name),
       success: (res) => {
         setSelectedBatchId(availableBatches[res.tapIndex].id);
-        console.log('[Patrol] 切换批次:', availableBatches[res.tapIndex].id);
       },
     });
   };
@@ -152,8 +164,12 @@ const CommentPatrolPage: React.FC = () => {
       content: '确定要将此评论升级为工单吗？升级后工单页可查看并处理。',
       success: (res) => {
         if (res.confirm) {
-          addTicketFromComment(comment);
-          Taro.showToast({ title: '工单已创建，可在工单页查看', icon: 'success', duration: 2000 });
+          const result = addTicketFromComment(comment);
+          if (result) {
+            Taro.showToast({ title: '工单已创建，可在工单页查看', icon: 'success', duration: 2000 });
+          } else {
+            Taro.showToast({ title: '该评论已存在工单', icon: 'none' });
+          }
         }
       },
     });
@@ -161,7 +177,59 @@ const CommentPatrolPage: React.FC = () => {
 
   const handleQuickReply = (comment: Comment) => {
     Taro.switchTab({ url: '/pages/quick-comfort/index' });
-    console.log('[Patrol] 跳转快捷安抚:', comment.id);
+  };
+
+  const toggleCommentSelection = (commentId: string) => {
+    setSelectedComments(prev => {
+      const next = new Set(prev);
+      if (next.has(commentId)) {
+        next.delete(commentId);
+      } else {
+        next.add(commentId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllHighRisk = () => {
+    const ids = new Set(highRiskComments.map(c => c.id));
+    setSelectedComments(ids);
+  };
+
+  const clearSelection = () => {
+    setSelectedComments(new Set());
+  };
+
+  const handleBatchEscalate = () => {
+    if (selectedComments.size === 0) {
+      Taro.showToast({ title: '请先选择要升级的评论', icon: 'none' });
+      return;
+    }
+
+    const commentsToEscalate = filteredComments.filter(c => selectedComments.has(c.id));
+
+    Taro.showModal({
+      title: '批量升级确认',
+      content: `确定要将选中的 ${selectedComments.size} 条评论升级为工单吗？`,
+      success: (res) => {
+        if (res.confirm) {
+          const result = batchAddTicketsFromComments(commentsToEscalate);
+          setBatchResult(result);
+          setShowResultModal(true);
+          setSelectedComments(new Set());
+        }
+      },
+    });
+  };
+
+  const closeResultModal = () => {
+    setShowResultModal(false);
+    setBatchResult(null);
+  };
+
+  const goToTickets = () => {
+    closeResultModal();
+    Taro.switchTab({ url: '/pages/escalation-ticket/index' });
   };
 
   usePullDownRefresh(() => {
@@ -176,10 +244,39 @@ const CommentPatrolPage: React.FC = () => {
     ...categoryStats.map(s => ({ key: s.category, label: s.label, count: s.count })),
   ];
 
+  const typeTextMap = {
+    bad: '差评',
+    question: '追问',
+    review: '晒单',
+  };
+
   return (
     <ScrollView scrollY className={styles.pageContainer}>
       <View className={styles.filterSection}>
-        <Text className={styles.pageTitle}>评论巡检</Text>
+        <View className={batchStyles.titleRow}>
+          <Text className={styles.pageTitle}>评论巡检</Text>
+          <Button
+            className={classnames(batchStyles.batchToggleBtn, batchMode && batchStyles.batchToggleBtnActive)}
+            onClick={() => setBatchMode(!batchMode)}
+          >
+            <Text className={classnames(batchStyles.batchToggleText, batchMode && batchStyles.batchToggleTextActive)}>
+              {batchMode ? '取消批量' : '批量处理'}
+            </Text>
+          </Button>
+        </View>
+
+        {batchMode && highRiskComments.length > 0 && (
+          <View className={batchStyles.batchQuickBar}>
+            <Button className={batchStyles.quickSelectBtn} onClick={selectAllHighRisk}>
+              <Text className={batchStyles.quickSelectText}>一键选高风险 ({highRiskComments.length})</Text>
+            </Button>
+            {selectedComments.size > 0 && (
+              <Button className={batchStyles.quickSelectBtn} onClick={clearSelection}>
+                <Text className={batchStyles.quickSelectText}>清空</Text>
+              </Button>
+            )}
+          </View>
+        )}
 
         <View className={styles.filterRow}>
           <View className={styles.filterItem} onClick={handleShopSelect}>
@@ -279,12 +376,88 @@ const CommentPatrolPage: React.FC = () => {
           <View className={styles.commentList}>
             {filteredComments.length > 0 ? (
               filteredComments.map(comment => (
-                <CommentCard
-                  key={comment.id}
-                  comment={comment}
-                  onEscalate={handleEscalate}
-                  onQuickReply={handleQuickReply}
-                />
+                <View key={comment.id} className={batchStyles.commentWrapper}>
+                  {batchMode && (
+                    <View
+                      className={classnames(
+                        batchStyles.checkbox,
+                        selectedComments.has(comment.id) && batchStyles.checkboxChecked
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCommentSelection(comment.id);
+                      }}
+                    >
+                      {selectedComments.has(comment.id) && (
+                        <Text className={batchStyles.checkIcon}>✓</Text>
+                      )}
+                    </View>
+                  )}
+                  <View className={batchStyles.commentContent} style={{ width: batchMode ? 'calc(100% - 72rpx)' : '100%' }}>
+                    <View className={batchStyles.miniCard}>
+                      <View className={batchStyles.miniCardHeader}>
+                        <View className={batchStyles.userInfo}>
+                          <Image
+                            className={batchStyles.miniAvatar}
+                            src={comment.userAvatar}
+                            mode="aspectFill"
+                          />
+                          <View className={batchStyles.userMeta}>
+                            <View className={batchStyles.userNameRow}>
+                              <Text className={batchStyles.nickname}>{comment.userNickname}</Text>
+                              {comment.isMediaAccount && (
+                                <View className={batchStyles.mediaBadge}>
+                                  <Text className={batchStyles.mediaText}>媒体</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text className={batchStyles.timeText}>{comment.createTime}</Text>
+                          </View>
+                        </View>
+                        <View className={batchStyles.tagsRow}>
+                          <View className={classnames(batchStyles.typeTag, batchStyles[comment.type])}>
+                            <Text className={batchStyles.typeText}>{typeTextMap[comment.type]}</Text>
+                          </View>
+                          <RiskTag level={comment.riskLevel} size="sm" />
+                        </View>
+                      </View>
+
+                      <View className={batchStyles.miniCardBody}>
+                        <CategoryTag category={comment.category} size="sm" />
+                        <Text className={batchStyles.contentText}>{comment.content}</Text>
+                        {comment.hasImage && (
+                          <View className={batchStyles.imageHint}>
+                            <Text className={batchStyles.imageHintText}>📷 含图片</Text>
+                          </View>
+                        )}
+                        {comment.repeatCount > 1 && (
+                          <View className={batchStyles.repeatHint}>
+                            <Text className={batchStyles.repeatHintText}>
+                              相似表述已出现 {comment.repeatCount} 次
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {!batchMode && (
+                        <View className={batchStyles.miniCardFooter}>
+                          <Button
+                            className={classnames(batchStyles.actionBtn, batchStyles.secondaryBtn)}
+                            onClick={() => handleQuickReply(comment)}
+                          >
+                            <Text className={batchStyles.btnText}>快捷安抚</Text>
+                          </Button>
+                          <Button
+                            className={classnames(batchStyles.actionBtn, batchStyles.primaryBtn)}
+                            onClick={() => handleEscalate(comment)}
+                          >
+                            <Text className={batchStyles.btnTextPrimary}>升级工单</Text>
+                          </Button>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
               ))
             ) : (
               <View className={styles.emptyState}>
@@ -297,7 +470,73 @@ const CommentPatrolPage: React.FC = () => {
               </View>
             )}
           </View>
+
+          <View style={{ height: batchMode ? 200 : 40 }} />
         </>
+      )}
+
+      {batchMode && hasValidSelection && (
+        <View className={batchStyles.batchActionBar}>
+          <View className={batchStyles.batchInfo}>
+            <Text className={batchStyles.selectedCountText}>
+              已选择 <Text className={batchStyles.selectedCount}>{selectedComments.size}</Text> 条
+            </Text>
+          </View>
+          <Button
+            className={classnames(batchStyles.batchActionBtn, selectedComments.size === 0 && batchStyles.batchActionBtnDisabled)}
+            disabled={selectedComments.size === 0}
+            onClick={handleBatchEscalate}
+          >
+            <Text className={batchStyles.batchActionText}>一键升级工单</Text>
+          </Button>
+        </View>
+      )}
+
+      {showResultModal && batchResult && (
+        <View className={batchStyles.resultOverlay}>
+          <View className={batchStyles.resultContent}>
+            <View className={batchStyles.resultHeader}>
+              <Text className={batchStyles.resultIcon}>🎉</Text>
+              <Text className={batchStyles.resultTitle}>批量升级完成</Text>
+            </View>
+
+            <View className={batchStyles.resultStats}>
+              <View className={batchStyles.resultStatItem}>
+                <Text className={batchStyles.resultStatCountSuccess}>{batchResult.successCount}</Text>
+                <Text className={batchStyles.resultStatLabel}>成功创建</Text>
+              </View>
+              {batchResult.failCount > 0 && (
+                <View className={batchStyles.resultStatItem}>
+                  <Text className={batchStyles.resultStatCountFail}>{batchResult.failCount}</Text>
+                  <Text className={batchStyles.resultStatLabel}>已存在工单</Text>
+                </View>
+              )}
+            </View>
+
+            {batchResult.failReasons.length > 0 && (
+              <View className={batchStyles.resultWarnings}>
+                {batchResult.failReasons.map((reason, idx) => (
+                  <Text key={idx} className={batchStyles.warningText}>⚠️ {reason}</Text>
+                ))}
+              </View>
+            )}
+
+            <View className={batchStyles.resultActions}>
+              <Button
+                className={classnames(batchStyles.resultBtn, batchStyles.resultBtnSecondary)}
+                onClick={closeResultModal}
+              >
+                <Text className={batchStyles.resultBtnSecondaryText}>继续巡检</Text>
+              </Button>
+              <Button
+                className={classnames(batchStyles.resultBtn, batchStyles.resultBtnPrimary)}
+                onClick={goToTickets}
+              >
+                <Text className={batchStyles.resultBtnPrimaryText}>查看工单</Text>
+              </Button>
+            </View>
+          </View>
+        </View>
       )}
     </ScrollView>
   );

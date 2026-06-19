@@ -4,6 +4,7 @@ import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import classnames from 'classnames';
 import StatusBadge from '@/components/StatusBadge';
 import RiskTag from '@/components/RiskTag';
+import TicketDetailPanel from '@/components/TicketDetailPanel';
 import { EscalationTicket, TicketStatus, TicketPriority } from '@/types';
 import useAppStore from '@/store/useAppStore';
 import styles from './index.module.scss';
@@ -15,6 +16,7 @@ const statusFilterList: { key: FilterStatus; label: string }[] = [
   { key: 'pending', label: '待核实' },
   { key: 'replied', label: '已回复' },
   { key: 'compensated', label: '已补偿' },
+  { key: 'closed', label: '已关闭' },
 ];
 
 const priorityTextMap: Record<TicketPriority, string> = {
@@ -27,8 +29,12 @@ const EscalationTicketPage: React.FC = () => {
   const tickets = useAppStore(state => state.tickets);
   const updateTicketStatus = useAppStore(state => state.updateTicketStatus);
   const updateTicketCompensation = useAppStore(state => state.updateTicketCompensation);
+  const updateTicketRemark = useAppStore(state => state.updateTicketRemark);
+  const updateTicketAssignee = useAppStore(state => state.updateTicketAssignee);
 
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
+  const [detailTicket, setDetailTicket] = useState<EscalationTicket | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {
@@ -59,6 +65,11 @@ const EscalationTicketPage: React.FC = () => {
     return result;
   }, [tickets, activeFilter]);
 
+  const liveDetailTicket = useMemo(() => {
+    if (!detailTicket) return null;
+    return tickets.find(t => t.id === detailTicket.id) || null;
+  }, [tickets, detailTicket]);
+
   usePullDownRefresh(() => {
     setTimeout(() => {
       Taro.stopPullDownRefresh();
@@ -67,20 +78,32 @@ const EscalationTicketPage: React.FC = () => {
 
   const handleTicketClick = (ticket: EscalationTicket) => {
     console.log('[Escalation] 查看工单详情:', ticket.id);
-    const lines = [
-      `工单ID: ${ticket.id}`,
-      `创建时间: ${ticket.createTime}`,
-      `更新时间: ${ticket.updateTime}`,
-      `负责人: ${ticket.assignee}`,
-    ];
-    if (ticket.remark) {
-      lines.push(`备注: ${ticket.remark}`);
-    }
-    Taro.showModal({
-      title: '工单详情',
-      content: lines.join('\n'),
-      showCancel: false,
-    });
+    setDetailTicket(ticket);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setDetailTicket(null);
+  };
+
+  const handleDetailStatusChange = (ticketId: string, status: TicketStatus) => {
+    updateTicketStatus(ticketId, status);
+    Taro.showToast({ title: '状态已更新', icon: 'success' });
+  };
+
+  const handleDetailCompensate = (ticketId: string, amount: number) => {
+    updateTicketCompensation(ticketId, amount, 'compensated');
+    Taro.showToast({ title: '补偿已发放', icon: 'success' });
+  };
+
+  const handleDetailRemarkUpdate = (ticketId: string, remark: string) => {
+    updateTicketRemark(ticketId, remark);
+  };
+
+  const handleDetailAssigneeUpdate = (ticketId: string, assignee: string) => {
+    updateTicketAssignee(ticketId, assignee);
+    Taro.showToast({ title: '负责人已更新', icon: 'success' });
   };
 
   const handleStatusChange = (ticket: EscalationTicket, newStatus: TicketStatus) => {
@@ -199,6 +222,10 @@ const EscalationTicketPage: React.FC = () => {
             <Text className={styles.statCount}>{statusCounts.compensated}</Text>
             <Text className={styles.statLabel}>已补偿</Text>
           </View>
+          <View className={styles.statItem}>
+            <Text className={styles.statCount}>{statusCounts.closed}</Text>
+            <Text className={styles.statLabel}>已关闭</Text>
+          </View>
         </View>
       </View>
 
@@ -255,7 +282,7 @@ const EscalationTicketPage: React.FC = () => {
                       backgroundColor: '#f0f5ff',
                       borderRadius: 8,
                     }}>
-                      <Text style={{ fontSize: 20, color: '#165dff' }}>含图片</Text>
+                      <Text style={{ fontSize: 20, color: '#165dff' }>含图片</Text>
                     </View>
                   )}
                   {ticket.compensationAmount && (
@@ -294,6 +321,16 @@ const EscalationTicketPage: React.FC = () => {
           </View>
         )}
       </View>
+
+      <TicketDetailPanel
+        ticket={liveDetailTicket}
+        visible={showDetail}
+        onClose={handleCloseDetail}
+        onStatusChange={handleDetailStatusChange}
+        onCompensate={handleDetailCompensate}
+        onRemarkUpdate={handleDetailRemarkUpdate}
+        onAssigneeUpdate={handleDetailAssigneeUpdate}
+      />
     </ScrollView>
   );
 };

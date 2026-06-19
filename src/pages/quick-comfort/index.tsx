@@ -4,10 +4,11 @@ import Taro, { useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import CategoryTag from '@/components/CategoryTag';
 import { comfortScenes } from '@/data/templates';
-import { CommentCategory, ComfortTemplate } from '@/types';
+import { CommentCategory, ComfortTemplate, TemplateVersion } from '@/types';
 import useAppStore from '@/store/useAppStore';
 import styles from './index.module.scss';
 import editStyles from './edit.module.scss';
+import versionStyles from './version.module.scss';
 
 interface VariableValues {
   orderStatus: string;
@@ -29,9 +30,17 @@ const returnMethodOptions = [
   { value: '门店退换', label: '门店退换' },
 ];
 
+const changeTypeTextMap: Record<TemplateVersion['changeType'], string> = {
+  create: '创建版本',
+  edit: '修改内容',
+  revert: '恢复版本',
+};
+
 const QuickComfortPage: React.FC = () => {
   const templates = useAppStore(state => state.templates);
   const updateTemplateContent = useAppStore(state => state.updateTemplateContent);
+  const getTemplateVersions = useAppStore(state => state.getTemplateVersions);
+  const revertTemplateToVersion = useAppStore(state => state.revertTemplateToVersion);
 
   const [selectedSceneId, setSelectedSceneId] = useState('s1');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(templates[0]?.id || null);
@@ -44,6 +53,9 @@ const QuickComfortPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTitle, setEditingTitle] = useState('');
   const [editingContent, setEditingContent] = useState('');
+
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 
   useDidShow(() => {
     if (!selectedTemplateId && templates.length > 0) {
@@ -61,6 +73,16 @@ const QuickComfortPage: React.FC = () => {
   const sceneTemplates = useMemo(() => {
     return templates.filter(t => t.sceneId === selectedSceneId);
   }, [templates, selectedSceneId]);
+
+  const templateVersions = useMemo(() => {
+    if (!selectedTemplateId) return [];
+    return getTemplateVersions(selectedTemplateId);
+  }, [selectedTemplateId, getTemplateVersions]);
+
+  const selectedVersion = useMemo(() => {
+    if (!selectedVersionId) return null;
+    return templateVersions.find(v => v.id === selectedVersionId) || null;
+  }, [templateVersions, selectedVersionId]);
 
   const generatedContent = useMemo(() => {
     if (!selectedTemplate) return '';
@@ -83,6 +105,7 @@ const QuickComfortPage: React.FC = () => {
 
   const handleTemplateSelect = (template: ComfortTemplate) => {
     setSelectedTemplateId(template.id);
+    setSelectedVersionId(null);
   };
 
   const handleOrderStatusChange = () => {
@@ -150,6 +173,15 @@ const QuickComfortPage: React.FC = () => {
     setShowEditModal(true);
   };
 
+  const handleViewVersions = () => {
+    if (!selectedTemplate) {
+      Taro.showToast({ title: '请先选择话术模板', icon: 'none' });
+      return;
+    }
+    setShowVersionModal(true);
+    setSelectedVersionId(null);
+  };
+
   const handleSaveTemplate = () => {
     if (!selectedTemplate) return;
     if (!editingTitle.trim()) {
@@ -165,8 +197,32 @@ const QuickComfortPage: React.FC = () => {
     Taro.showToast({ title: '模板已保存', icon: 'success' });
   };
 
-  const handleCloseModal = () => {
+  const handleCloseEditModal = () => {
     setShowEditModal(false);
+  };
+
+  const handleCloseVersionModal = () => {
+    setShowVersionModal(false);
+    setSelectedVersionId(null);
+  };
+
+  const handleVersionSelect = (versionId: string) => {
+    setSelectedVersionId(prev => prev === versionId ? null : versionId);
+  };
+
+  const handleRevertVersion = (version: TemplateVersion) => {
+    if (!selectedTemplate) return;
+    Taro.showModal({
+      title: '确认恢复',
+      content: `确定要将模板恢复到"${version.title}"版本吗？\n\n恢复后当前内容会被覆盖，但会保存为新版本记录。`,
+      success: (res) => {
+        if (res.confirm) {
+          revertTemplateToVersion(selectedTemplate.id, version.id);
+          setSelectedVersionId(null);
+          Taro.showToast({ title: '版本已恢复', icon: 'success' });
+        }
+      },
+    });
   };
 
   const insertVariable = (varName: string) => {
@@ -214,7 +270,14 @@ const QuickComfortPage: React.FC = () => {
           </View>
         ))}
 
-        <Text className={styles.sectionTitle}>选择话术模板</Text>
+        <View className={versionStyles.sectionHeader}>
+          <Text className={styles.sectionTitle}>选择话术模板</Text>
+          {selectedTemplate && (
+            <Button className={versionStyles.versionBtn} onClick={handleViewVersions}>
+              <Text className={versionStyles.versionBtnText}>📜 版本记录 ({templateVersions.length})</Text>
+            </Button>
+          )}
+        </View>
         <View className={styles.templateList}>
           {sceneTemplates.length > 0 ? sceneTemplates.map(template => (
             <View
@@ -296,7 +359,7 @@ const QuickComfortPage: React.FC = () => {
           <View className={editStyles.modalContent}>
             <View className={editStyles.modalHeader}>
               <Text className={editStyles.modalTitle}>编辑话术模板</Text>
-              <View className={editStyles.closeBtn} onClick={handleCloseModal}>
+              <View className={editStyles.closeBtn} onClick={handleCloseEditModal}>
                 <Text className={editStyles.closeText}>✕</Text>
               </View>
             </View>
@@ -346,7 +409,7 @@ const QuickComfortPage: React.FC = () => {
             <View className={editStyles.modalFooter}>
               <Button
                 className={classnames(editStyles.modalBtn, editStyles.modalBtnCancel)}
-                onClick={handleCloseModal}
+                onClick={handleCloseEditModal}
               >
                 <Text className={editStyles.modalBtnCancelText}>取消</Text>
               </Button>
@@ -355,6 +418,104 @@ const QuickComfortPage: React.FC = () => {
                 onClick={handleSaveTemplate}
               >
                 <Text className={editStyles.modalBtnConfirmText}>保存</Text>
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showVersionModal && (
+        <View className={versionStyles.modalOverlay}>
+          <View className={versionStyles.modalContent}>
+            <View className={versionStyles.modalHeader}>
+              <Text className={versionStyles.modalTitle}>版本历史记录</Text>
+              <View className={versionStyles.closeBtn} onClick={handleCloseVersionModal}>
+                <Text className={versionStyles.closeText}>✕</Text>
+              </View>
+            </View>
+
+            <View className={versionStyles.modalSubtitle}>
+              <Text className={versionStyles.subtitleText}>
+                {selectedTemplate?.title || ''} · 共 {templateVersions.length} 个版本
+              </Text>
+            </View>
+
+            <ScrollView scrollY className={versionStyles.modalBody}>
+              {templateVersions.length > 0 ? (
+                <View className={versionStyles.versionList}>
+                  {templateVersions.map((version, index) => (
+                    <View key={version.id}>
+                      <View
+                        className={classnames(
+                          versionStyles.versionItem,
+                          index === 0 && versionStyles.versionItemCurrent,
+                          selectedVersionId === version.id && versionStyles.versionItemSelected
+                        )}
+                        onClick={() => handleVersionSelect(version.id)}
+                      >
+                        <View className={versionStyles.versionHeader}>
+                          <View className={versionStyles.versionInfo}>
+                            <View className={versionStyles.versionBadge}>
+                              <Text className={versionStyles.versionBadgeText}>
+                                {index === 0 ? '当前' : `V${templateVersions.length - index}`}
+                              </Text>
+                            </View>
+                            <Text className={versionStyles.versionType}>
+                              {changeTypeTextMap[version.changeType]}
+                            </Text>
+                            <Text className={versionStyles.versionTime}>{version.createTime}</Text>
+                          </View>
+                          <View className={versionStyles.versionOperator}>
+                            <Text className={versionStyles.operatorText}>{version.operator}</Text>
+                          </View>
+                        </View>
+
+                        {selectedVersionId === version.id && (
+                          <View className={versionStyles.versionDetail}>
+                            <View className={versionStyles.detailSection}>
+                              <Text className={versionStyles.detailLabel}>模板标题</Text>
+                              <Text className={versionStyles.detailContent}>{version.title}</Text>
+                            </View>
+                            <View className={versionStyles.detailSection}>
+                              <Text className={versionStyles.detailLabel}>模板内容</Text>
+                              <View className={versionStyles.detailContentBox}>
+                                <Text className={versionStyles.detailContent}>{version.content}</Text>
+                              </View>
+                            </View>
+                            {index !== 0 && (
+                              <View className={versionStyles.versionActions}>
+                                <Button
+                                  className={versionStyles.revertBtn}
+                                  onClick={() => handleRevertVersion(version)}
+                                >
+                                  <Text className={versionStyles.revertBtnText}>恢复到此版本</Text>
+                                </Button>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                      {index < templateVersions.length - 1 && (
+                        <View className={versionStyles.versionDivider} />
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View className={versionStyles.emptyState}>
+                  <Text className={versionStyles.emptyIcon}>📝</Text>
+                  <Text className={versionStyles.emptyText}>暂无版本记录</Text>
+                  <Text className={versionStyles.emptyHint}>编辑保存模板后，会自动记录版本历史</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View className={versionStyles.modalFooter}>
+              <Button
+                className={classnames(versionStyles.footerBtn, versionStyles.footerBtnPrimary)}
+                onClick={handleCloseVersionModal}
+              >
+                <Text className={versionStyles.footerBtnText}>关闭</Text>
               </Button>
             </View>
           </View>

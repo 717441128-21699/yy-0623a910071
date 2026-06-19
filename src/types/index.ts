@@ -83,6 +83,38 @@ export type TicketStatus = 'replied' | 'pending' | 'compensated' | 'closed';
 // 工单优先级
 export type TicketPriority = 'high' | 'medium' | 'low';
 
+// 工单处理记录
+export interface TicketActionLog {
+  id: string;
+  ticketId: string;
+  action: 'status_change' | 'compensation' | 'remark' | 'assign' | 'create';
+  operator: string;
+  timestamp: string;
+  detail: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
+// 话术模板版本记录
+export interface TemplateVersion {
+  id: string;
+  templateId: string;
+  title: string;
+  content: string;
+  variables: string[];
+  createTime: string;
+  operator: string;
+  changeType: 'create' | 'edit' | 'revert';
+}
+
+// 批量升级结果
+export interface BatchEscalationResult {
+  successCount: number;
+  failCount: number;
+  successIds: string[];
+  failReasons: string[];
+}
+
 // 升级工单
 export interface EscalationTicket {
   id: string;
@@ -102,6 +134,7 @@ export interface EscalationTicket {
   assignee: string;
   remark?: string;
   compensationAmount?: number;
+  actionLogs: TicketActionLog[];
 }
 
 // 分类统计
