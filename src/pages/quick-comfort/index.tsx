@@ -79,8 +79,6 @@ const QuickComfortPage: React.FC = () => {
     return getTemplateVersions(selectedTemplateId);
   }, [selectedTemplateId, getTemplateVersions]);
 
-
-
   const generatedContent = useMemo(() => {
     if (!selectedTemplate) return '';
     let content = selectedTemplate.content;

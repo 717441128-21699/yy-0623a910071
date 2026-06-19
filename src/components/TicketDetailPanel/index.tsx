@@ -51,7 +51,6 @@ const TicketDetailPanel: React.FC<TicketDetailPanelProps> = ({
   onRemarkUpdate,
   onAssigneeUpdate,
 }) => {
-  const [editingRemark, setEditingRemark] = useState('');
   const [showRemarkEditor, setShowRemarkEditor] = useState(false);
   const [remarkInput, setRemarkInput] = useState('');
 

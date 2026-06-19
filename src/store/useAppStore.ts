@@ -608,9 +608,6 @@ const useAppStore = create<AppState>((set, get) => {
       const contentText = filtered.map(c => c.content).join(' ');
 
       const result: RepeatPhrase[] = [];
-      const usedCategories = new Set<CommentCategory>();
-
-      filtered.forEach(c => usedCategories.add(c.category));
 
       allRepeatPhrases.forEach(phrase => {
         if (contentText.includes(phrase.text)) {

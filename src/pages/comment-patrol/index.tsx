@@ -67,12 +67,6 @@ const CommentPatrolPage: React.FC = () => {
   }, [availableBatches, selectedBatchId]);
 
   useEffect(() => {
-    if (availableBatches.length > 0 && !selectedBatchId) {
-      setSelectedBatchId(availableBatches[0].id);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!batchMode) {
       setSelectedComments(new Set());
     }
