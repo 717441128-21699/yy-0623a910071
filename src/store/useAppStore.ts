@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import Taro from '@tarojs/taro';
 import {
   ComfortTemplate,
   EscalationTicket,
@@ -14,6 +15,12 @@ import {
 import { comfortTemplates as initialTemplates } from '@/data/templates';
 import { tickets as initialTickets } from '@/data/tickets';
 import { comments as allComments, repeatPhrases as allRepeatPhrases } from '@/data/comments';
+
+const STORAGE_KEYS = {
+  TEMPLATES: 'op_templates',
+  TICKETS: 'op_tickets',
+  TEMPLATE_VERSIONS: 'op_template_versions',
+} as const;
 
 interface AppState {
   templates: ComfortTemplate[];
@@ -140,150 +147,162 @@ const initTemplateVersions = (): Record<string, TemplateVersion[]> => {
   return versions;
 };
 
-const useAppStore = create<AppState>((set, get) => ({
-  templates: JSON.parse(JSON.stringify(initialTemplates)),
-  tickets: enhanceInitialTickets(JSON.parse(JSON.stringify(initialTickets))),
-  templateVersions: initTemplateVersions(),
-
-  updateTemplateContent: (templateId, newContent, newTitle) => {
-    const template = get().templates.find(t => t.id === templateId);
-    if (!template) return;
-
-    const newTemplate = {
-      ...template,
-      content: newContent,
-      ...(newTitle ? { title: newTitle } : {}),
-    };
-
-    const version: TemplateVersion = {
-      id: generateVersionId(),
-      templateId,
-      title: newTitle || template.title,
-      content: newContent,
-      variables: [...template.variables],
-      createTime: getCurrentTime(),
-      operator: '当前用户',
-      changeType: 'edit',
-    };
-
-    set(state => ({
-      templates: state.templates.map(t => (t.id === templateId ? newTemplate : t)),
-      templateVersions: {
-        ...state.templateVersions,
-        [templateId]: [version, ...(state.templateVersions[templateId] || [])].slice(0, 20),
-      },
-    }));
-
-    console.log('[Store] 更新模板:', templateId);
-  },
-
-  revertTemplateToVersion: (templateId, versionId) => {
-    const versions = get().templateVersions[templateId];
-    if (!versions) return;
-
-    const targetVersion = versions.find(v => v.id === versionId);
-    if (!targetVersion) return;
-
-    const currentTemplate = get().templates.find(t => t.id === templateId);
-    if (!currentTemplate) return;
-
-    const revertVersion: TemplateVersion = {
-      id: generateVersionId(),
-      templateId,
-      title: targetVersion.title,
-      content: targetVersion.content,
-      variables: [...targetVersion.variables],
-      createTime: getCurrentTime(),
-      operator: '当前用户',
-      changeType: 'revert',
-    };
-
-    set(state => ({
-      templates: state.templates.map(t =>
-        t.id === templateId
-          ? {
-              ...t,
-              title: targetVersion.title,
-              content: targetVersion.content,
-            }
-          : t
-      ),
-      templateVersions: {
-        ...state.templateVersions,
-        [templateId]: [revertVersion, ...versions].slice(0, 20),
-      },
-    }));
-
-    console.log('[Store] 恢复模板版本:', templateId, versionId);
-  },
-
-  getTemplateVersions: (templateId) => {
-    return get().templateVersions[templateId] || [];
-  },
-
-  addTicketFromComment: (comment) => {
-    const existingTicket = get().tickets.find(t => t.commentId === comment.id);
-    if (existingTicket) {
-      console.log('[Store] 工单已存在，跳过:', comment.id);
-      return null;
+const loadFromStorage = <T>(key: string, defaultValue: T): T => {
+  try {
+    const data = Taro.getStorageSync(key);
+    if (data) {
+      console.log('[Storage] 从本地加载:', key);
+      return JSON.parse(data);
     }
+  } catch (e) {
+    console.warn('[Storage] 加载失败，使用默认值:', key, e);
+  }
+  return defaultValue;
+};
 
-    const newTicket: EscalationTicket = {
-      id: generateTicketId(),
-      commentId: comment.id,
-      userNickname: comment.userNickname,
-      userAvatar: comment.userAvatar,
-      content: comment.content,
-      hasImage: comment.hasImage,
-      isMediaAccount: comment.isMediaAccount,
-      riskLevel: priorityMap[comment.riskLevel],
-      status: 'pending',
-      shopId: comment.shopId,
-      productId: comment.productId,
-      batchId: comment.batchId,
-      createTime: getCurrentTime(),
-      updateTime: getCurrentTime(),
-      assignee: '待分配',
-      remark: `从评论巡检升级工单，评论ID：${comment.id}`,
-      actionLogs: [
-        createActionLog(
-          '',
-          'create',
-          `从评论巡检升级工单，评论ID：${comment.id}`
-        ),
-      ],
-    };
+const saveToStorage = <T>(key: string, value: T): void => {
+  try {
+    Taro.setStorageSync(key, JSON.stringify(value));
+    console.log('[Storage] 已保存到本地:', key);
+  } catch (e) {
+    console.error('[Storage] 保存失败:', key, e);
+  }
+};
 
-    newTicket.actionLogs[0].ticketId = newTicket.id;
-    newTicket.actionLogs[0].id = generateLogId();
+const getInitialState = () => {
+  const storedTemplates = loadFromStorage<ComfortTemplate[]>(
+    STORAGE_KEYS.TEMPLATES,
+    JSON.parse(JSON.stringify(initialTemplates))
+  );
 
-    set(state => ({
-      tickets: [newTicket, ...state.tickets],
-    }));
+  const storedTickets = loadFromStorage<EscalationTicket[]>(
+    STORAGE_KEYS.TICKETS,
+    enhanceInitialTickets(JSON.parse(JSON.stringify(initialTickets)))
+  );
 
-    console.log('[Store] 新增工单:', newTicket.id);
-    return newTicket;
-  },
+  const storedVersions = loadFromStorage<Record<string, TemplateVersion[]>>(
+    STORAGE_KEYS.TEMPLATE_VERSIONS,
+    initTemplateVersions()
+  );
 
-  batchAddTicketsFromComments: (comments) => {
-    const result: BatchEscalationResult = {
-      successCount: 0,
-      failCount: 0,
-      successIds: [],
-      failReasons: [],
-    };
+  return {
+    templates: storedTemplates,
+    tickets: storedTickets,
+    templateVersions: storedVersions,
+  };
+};
 
-    const currentTickets = get().tickets;
-    const newTickets: EscalationTicket[] = [];
+const useAppStore = create<AppState>((set, get) => {
+  const initialState = getInitialState();
 
-    comments.forEach((comment, index) => {
-      const existingTicket = currentTickets.find(t => t.commentId === comment.id) ||
-        newTickets.find(t => t.commentId === comment.id);
+  const persistTemplates = (templates: ComfortTemplate[]) => {
+    saveToStorage(STORAGE_KEYS.TEMPLATES, templates);
+  };
 
+  const persistTickets = (tickets: EscalationTicket[]) => {
+    saveToStorage(STORAGE_KEYS.TICKETS, tickets);
+  };
+
+  const persistTemplateVersions = (versions: Record<string, TemplateVersion[]>) => {
+    saveToStorage(STORAGE_KEYS.TEMPLATE_VERSIONS, versions);
+  };
+
+  return {
+    ...initialState,
+
+    updateTemplateContent: (templateId, newContent, newTitle) => {
+      const template = get().templates.find(t => t.id === templateId);
+      if (!template) return;
+
+      const newTemplate = {
+        ...template,
+        content: newContent,
+        ...(newTitle ? { title: newTitle } : {}),
+      };
+
+      const version: TemplateVersion = {
+        id: generateVersionId(),
+        templateId,
+        title: newTitle || template.title,
+        content: newContent,
+        variables: [...template.variables],
+        createTime: getCurrentTime(),
+        operator: '当前用户',
+        changeType: 'edit',
+      };
+
+      set(state => {
+        const newTemplates = state.templates.map(t => (t.id === templateId ? newTemplate : t));
+        const newVersions = {
+          ...state.templateVersions,
+          [templateId]: [version, ...(state.templateVersions[templateId] || [])].slice(0, 20),
+        };
+        persistTemplates(newTemplates);
+        persistTemplateVersions(newVersions);
+        return {
+          templates: newTemplates,
+          templateVersions: newVersions,
+        };
+      });
+
+      console.log('[Store] 更新模板:', templateId);
+    },
+
+    revertTemplateToVersion: (templateId, versionId) => {
+      const versions = get().templateVersions[templateId];
+      if (!versions) return;
+
+      const targetVersion = versions.find(v => v.id === versionId);
+      if (!targetVersion) return;
+
+      const currentTemplate = get().templates.find(t => t.id === templateId);
+      if (!currentTemplate) return;
+
+      const revertVersion: TemplateVersion = {
+        id: generateVersionId(),
+        templateId,
+        title: targetVersion.title,
+        content: targetVersion.content,
+        variables: [...targetVersion.variables],
+        createTime: getCurrentTime(),
+        operator: '当前用户',
+        changeType: 'revert',
+      };
+
+      set(state => {
+        const newTemplates = state.templates.map(t =>
+          t.id === templateId
+            ? {
+                ...t,
+                title: targetVersion.title,
+                content: targetVersion.content,
+              }
+            : t
+        );
+        const newVersions = {
+          ...state.templateVersions,
+          [templateId]: [revertVersion, ...versions].slice(0, 20),
+        };
+        persistTemplates(newTemplates);
+        persistTemplateVersions(newVersions);
+        return {
+          templates: newTemplates,
+          templateVersions: newVersions,
+        };
+      });
+
+      console.log('[Store] 恢复模板版本:', templateId, versionId);
+    },
+
+    getTemplateVersions: (templateId) => {
+      return get().templateVersions[templateId] || [];
+    },
+
+    addTicketFromComment: (comment) => {
+      const existingTicket = get().tickets.find(t => t.commentId === comment.id);
       if (existingTicket) {
-        result.failCount++;
-        result.failReasons.push(`评论 ${index + 1}：已存在工单`);
-        return;
+        console.log('[Store] 工单已存在，跳过:', comment.id);
+        return null;
       }
 
       const newTicket: EscalationTicket = {
@@ -302,263 +321,336 @@ const useAppStore = create<AppState>((set, get) => ({
         createTime: getCurrentTime(),
         updateTime: getCurrentTime(),
         assignee: '待分配',
-        remark: `从评论巡检批量升级，评论ID：${comment.id}`,
+        remark: `从评论巡检升级工单，评论ID：${comment.id}`,
         actionLogs: [
-          {
-            id: generateLogId(),
-            ticketId: '',
-            action: 'create',
-            operator: '当前用户',
-            timestamp: getCurrentTime(),
-            detail: `从评论巡检批量升级工单，评论ID：${comment.id}`,
-          },
+          createActionLog(
+            '',
+            'create',
+            `从评论巡检升级工单，评论ID：${comment.id}`
+          ),
         ],
       };
+
       newTicket.actionLogs[0].ticketId = newTicket.id;
+      newTicket.actionLogs[0].id = generateLogId();
 
-      newTickets.push(newTicket);
-      result.successCount++;
-      result.successIds.push(newTicket.id);
-    });
-
-    set(state => ({
-      tickets: [...newTickets, ...state.tickets],
-    }));
-
-    console.log('[Store] 批量升级工单结果:', result);
-    return result;
-  },
-
-  updateTicketStatus: (ticketId, status) => {
-    const ticket = get().tickets.find(t => t.id === ticketId);
-    if (!ticket) return;
-
-    const oldStatusText = statusTextMap[ticket.status];
-    const newStatusText = statusTextMap[status];
-
-    const log = createActionLog(
-      ticketId,
-      'status_change',
-      `状态变更：${oldStatusText} → ${newStatusText}`,
-      oldStatusText,
-      newStatusText
-    );
-
-    set(state => ({
-      tickets: state.tickets.map(t =>
-        t.id === ticketId
-          ? {
-              ...t,
-              status,
-              updateTime: getCurrentTime(),
-              actionLogs: [...t.actionLogs, log],
-            }
-          : t
-      ),
-    }));
-
-    console.log('[Store] 更新工单状态:', ticketId, status);
-  },
-
-  updateTicketCompensation: (ticketId, amount, status) => {
-    const ticket = get().tickets.find(t => t.id === ticketId);
-    if (!ticket) return;
-
-    const logs: TicketActionLog[] = [
-      createActionLog(
-        ticketId,
-        'compensation',
-        `发放补偿 ¥${amount}`,
-        ticket.compensationAmount ? `¥${ticket.compensationAmount}` : '无',
-        `¥${amount}`
-      ),
-    ];
-
-    let newStatus = status || ticket.status;
-    if (status && status !== ticket.status) {
-      logs.push(
-        createActionLog(
-          ticketId,
-          'status_change',
-          `状态变更：${statusTextMap[ticket.status]} → ${statusTextMap[status]}`,
-          statusTextMap[ticket.status],
-          statusTextMap[status]
-        )
-      );
-    }
-
-    set(state => ({
-      tickets: state.tickets.map(t =>
-        t.id === ticketId
-          ? {
-              ...t,
-              compensationAmount: amount,
-              status: newStatus,
-              updateTime: getCurrentTime(),
-              remark: t.remark ? `${t.remark}；已补偿 ¥${amount}` : `已补偿 ¥${amount}`,
-              actionLogs: [...t.actionLogs, ...logs],
-            }
-          : t
-      ),
-    }));
-
-    console.log('[Store] 工单补偿:', ticketId, amount);
-  },
-
-  updateTicketRemark: (ticketId, remark) => {
-    const ticket = get().tickets.find(t => t.id === ticketId);
-    if (!ticket) return;
-
-    const log = createActionLog(
-      ticketId,
-      'remark',
-      `更新备注`,
-      ticket.remark || '无',
-      remark
-    );
-
-    set(state => ({
-      tickets: state.tickets.map(t =>
-        t.id === ticketId
-          ? {
-              ...t,
-              remark,
-              updateTime: getCurrentTime(),
-              actionLogs: [...t.actionLogs, log],
-            }
-          : t
-      ),
-    }));
-
-    console.log('[Store] 更新工单备注:', ticketId);
-  },
-
-  updateTicketAssignee: (ticketId, assignee) => {
-    const ticket = get().tickets.find(t => t.id === ticketId);
-    if (!ticket) return;
-
-    const log = createActionLog(
-      ticketId,
-      'assign',
-      `变更负责人：${ticket.assignee} → ${assignee}`,
-      ticket.assignee,
-      assignee
-    );
-
-    set(state => ({
-      tickets: state.tickets.map(t =>
-        t.id === ticketId
-          ? {
-              ...t,
-              assignee,
-              updateTime: getCurrentTime(),
-              actionLogs: [...t.actionLogs, log],
-            }
-          : t
-      ),
-    }));
-
-    console.log('[Store] 更新工单负责人:', ticketId, assignee);
-  },
-
-  addTicketActionLog: (ticketId, logData) => {
-    const log: TicketActionLog = {
-      ...logData,
-      id: generateLogId(),
-      ticketId,
-      timestamp: getCurrentTime(),
-    };
-
-    set(state => ({
-      tickets: state.tickets.map(t =>
-        t.id === ticketId
-          ? {
-              ...t,
-              updateTime: getCurrentTime(),
-              actionLogs: [...t.actionLogs, log],
-            }
-          : t
-      ),
-    }));
-  },
-
-  getFilteredComments: (shopId, productId, batchId) => {
-    return allComments.filter(
-      c => c.shopId === shopId && c.productId === productId && c.batchId === batchId
-    );
-  },
-
-  getCategoryStats: (shopId, productId, batchId) => {
-    const filtered = allComments.filter(
-      c => c.shopId === shopId && c.productId === productId && c.batchId === batchId
-    );
-
-    const categories: CommentCategory[] = ['safety', 'refund', 'distrust'];
-    const labels: Record<CommentCategory, string> = {
-      safety: '安全担忧',
-      refund: '退款换货',
-      distrust: '不信任官方说明',
-    };
-
-    return categories.map(cat => ({
-      category: cat,
-      count: filtered.filter(c => c.category === cat).length,
-      label: labels[cat],
-    }));
-  },
-
-  getRepeatPhrases: (shopId, productId, batchId) => {
-    const filtered = allComments.filter(
-      c => c.shopId === shopId && c.productId === productId && c.batchId === batchId
-    );
-
-    if (filtered.length === 0) return [];
-
-    const contentText = filtered.map(c => c.content).join(' ');
-
-    const result: RepeatPhrase[] = [];
-    const usedCategories = new Set<CommentCategory>();
-
-    filtered.forEach(c => usedCategories.add(c.category));
-
-    allRepeatPhrases.forEach(phrase => {
-      if (contentText.includes(phrase.text)) {
-        const count = filtered.filter(c => c.content.includes(phrase.text)).length;
-        if (count > 0) {
-          result.push({
-            text: phrase.text,
-            count,
-            category: phrase.category,
-          });
-        }
-      }
-    });
-
-    if (result.length === 0) {
-      const categoryCount: Record<string, number> = {};
-      filtered.forEach(c => {
-        categoryCount[c.category] = (categoryCount[c.category] || 0) + 1;
+      set(state => {
+        const newTickets = [newTicket, ...state.tickets];
+        persistTickets(newTickets);
+        return { tickets: newTickets };
       });
 
-      const hintMap: Record<CommentCategory, string> = {
-        safety: '担忧产品安全问题',
-        refund: '询问退款退货流程',
-        distrust: '质疑官方说明',
+      console.log('[Store] 新增工单:', newTicket.id);
+      return newTicket;
+    },
+
+    batchAddTicketsFromComments: (comments) => {
+      const result: BatchEscalationResult = {
+        successCount: 0,
+        failCount: 0,
+        successIds: [],
+        failReasons: [],
       };
 
-      Object.entries(categoryCount).forEach(([cat, count]) => {
-        if (count >= 2) {
-          result.push({
-            text: hintMap[cat as CommentCategory],
-            count,
-            category: cat as CommentCategory,
-          });
+      const currentTickets = get().tickets;
+      const newTickets: EscalationTicket[] = [];
+
+      comments.forEach((comment, index) => {
+        const existingTicket = currentTickets.find(t => t.commentId === comment.id) ||
+          newTickets.find(t => t.commentId === comment.id);
+
+        if (existingTicket) {
+          result.failCount++;
+          result.failReasons.push(`评论 ${index + 1}：已存在工单`);
+          return;
+        }
+
+        const newTicket: EscalationTicket = {
+          id: generateTicketId(),
+          commentId: comment.id,
+          userNickname: comment.userNickname,
+          userAvatar: comment.userAvatar,
+          content: comment.content,
+          hasImage: comment.hasImage,
+          isMediaAccount: comment.isMediaAccount,
+          riskLevel: priorityMap[comment.riskLevel],
+          status: 'pending',
+          shopId: comment.shopId,
+          productId: comment.productId,
+          batchId: comment.batchId,
+          createTime: getCurrentTime(),
+          updateTime: getCurrentTime(),
+          assignee: '待分配',
+          remark: `从评论巡检批量升级，评论ID：${comment.id}`,
+          actionLogs: [
+            {
+              id: generateLogId(),
+              ticketId: '',
+              action: 'create',
+              operator: '当前用户',
+              timestamp: getCurrentTime(),
+              detail: `从评论巡检批量升级工单，评论ID：${comment.id}`,
+            },
+          ],
+        };
+        newTicket.actionLogs[0].ticketId = newTicket.id;
+
+        newTickets.push(newTicket);
+        result.successCount++;
+        result.successIds.push(newTicket.id);
+      });
+
+      set(state => {
+        const allTickets = [...newTickets, ...state.tickets];
+        persistTickets(allTickets);
+        return { tickets: allTickets };
+      });
+
+      console.log('[Store] 批量升级工单结果:', result);
+      return result;
+    },
+
+    updateTicketStatus: (ticketId, status) => {
+      const ticket = get().tickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      const oldStatusText = statusTextMap[ticket.status];
+      const newStatusText = statusTextMap[status];
+
+      const log = createActionLog(
+        ticketId,
+        'status_change',
+        `状态变更：${oldStatusText} → ${newStatusText}`,
+        oldStatusText,
+        newStatusText
+      );
+
+      set(state => {
+        const newTickets = state.tickets.map(t =>
+          t.id === ticketId
+            ? {
+                ...t,
+                status,
+                updateTime: getCurrentTime(),
+                actionLogs: [...t.actionLogs, log],
+              }
+            : t
+        );
+        persistTickets(newTickets);
+        return { tickets: newTickets };
+      });
+
+      console.log('[Store] 更新工单状态:', ticketId, status);
+    },
+
+    updateTicketCompensation: (ticketId, amount, status) => {
+      const ticket = get().tickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      const logs: TicketActionLog[] = [
+        createActionLog(
+          ticketId,
+          'compensation',
+          `发放补偿 ¥${amount}`,
+          ticket.compensationAmount ? `¥${ticket.compensationAmount}` : '无',
+          `¥${amount}`
+        ),
+      ];
+
+      let newStatus = status || ticket.status;
+      if (status && status !== ticket.status) {
+        logs.push(
+          createActionLog(
+            ticketId,
+            'status_change',
+            `状态变更：${statusTextMap[ticket.status]} → ${statusTextMap[status]}`,
+            statusTextMap[ticket.status],
+            statusTextMap[status]
+          )
+        );
+      }
+
+      set(state => {
+        const newTickets = state.tickets.map(t =>
+          t.id === ticketId
+            ? {
+                ...t,
+                compensationAmount: amount,
+                status: newStatus,
+                updateTime: getCurrentTime(),
+                remark: t.remark ? `${t.remark}；已补偿 ¥${amount}` : `已补偿 ¥${amount}`,
+                actionLogs: [...t.actionLogs, ...logs],
+              }
+            : t
+        );
+        persistTickets(newTickets);
+        return { tickets: newTickets };
+      });
+
+      console.log('[Store] 工单补偿:', ticketId, amount);
+    },
+
+    updateTicketRemark: (ticketId, remark) => {
+      const ticket = get().tickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      const log = createActionLog(
+        ticketId,
+        'remark',
+        `更新备注`,
+        ticket.remark || '无',
+        remark
+      );
+
+      set(state => {
+        const newTickets = state.tickets.map(t =>
+          t.id === ticketId
+            ? {
+                ...t,
+                remark,
+                updateTime: getCurrentTime(),
+                actionLogs: [...t.actionLogs, log],
+              }
+            : t
+        );
+        persistTickets(newTickets);
+        return { tickets: newTickets };
+      });
+
+      console.log('[Store] 更新工单备注:', ticketId);
+    },
+
+    updateTicketAssignee: (ticketId, assignee) => {
+      const ticket = get().tickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      const log = createActionLog(
+        ticketId,
+        'assign',
+        `变更负责人：${ticket.assignee} → ${assignee}`,
+        ticket.assignee,
+        assignee
+      );
+
+      set(state => {
+        const newTickets = state.tickets.map(t =>
+          t.id === ticketId
+            ? {
+                ...t,
+                assignee,
+                updateTime: getCurrentTime(),
+                actionLogs: [...t.actionLogs, log],
+              }
+            : t
+        );
+        persistTickets(newTickets);
+        return { tickets: newTickets };
+      });
+
+      console.log('[Store] 更新工单负责人:', ticketId, assignee);
+    },
+
+    addTicketActionLog: (ticketId, logData) => {
+      const log: TicketActionLog = {
+        ...logData,
+        id: generateLogId(),
+        ticketId,
+        timestamp: getCurrentTime(),
+      };
+
+      set(state => {
+        const newTickets = state.tickets.map(t =>
+          t.id === ticketId
+            ? {
+                ...t,
+                updateTime: getCurrentTime(),
+                actionLogs: [...t.actionLogs, log],
+              }
+            : t
+        );
+        persistTickets(newTickets);
+        return { tickets: newTickets };
+      });
+    },
+
+    getFilteredComments: (shopId, productId, batchId) => {
+      return allComments.filter(
+        c => c.shopId === shopId && c.productId === productId && c.batchId === batchId
+      );
+    },
+
+    getCategoryStats: (shopId, productId, batchId) => {
+      const filtered = allComments.filter(
+        c => c.shopId === shopId && c.productId === productId && c.batchId === batchId
+      );
+
+      const categories: CommentCategory[] = ['safety', 'refund', 'distrust'];
+      const labels: Record<CommentCategory, string> = {
+        safety: '安全担忧',
+        refund: '退款换货',
+        distrust: '不信任官方说明',
+      };
+
+      return categories.map(cat => ({
+        category: cat,
+        count: filtered.filter(c => c.category === cat).length,
+        label: labels[cat],
+      }));
+    },
+
+    getRepeatPhrases: (shopId, productId, batchId) => {
+      const filtered = allComments.filter(
+        c => c.shopId === shopId && c.productId === productId && c.batchId === batchId
+      );
+
+      if (filtered.length === 0) return [];
+
+      const contentText = filtered.map(c => c.content).join(' ');
+
+      const result: RepeatPhrase[] = [];
+      const usedCategories = new Set<CommentCategory>();
+
+      filtered.forEach(c => usedCategories.add(c.category));
+
+      allRepeatPhrases.forEach(phrase => {
+        if (contentText.includes(phrase.text)) {
+          const count = filtered.filter(c => c.content.includes(phrase.text)).length;
+          if (count > 0) {
+            result.push({
+              text: phrase.text,
+              count,
+              category: phrase.category,
+            });
+          }
         }
       });
-    }
 
-    return result.sort((a, b) => b.count - a.count).slice(0, 4);
-  },
-}));
+      if (result.length === 0) {
+        const categoryCount: Record<string, number> = {};
+        filtered.forEach(c => {
+          categoryCount[c.category] = (categoryCount[c.category] || 0) + 1;
+        });
+
+        const hintMap: Record<CommentCategory, string> = {
+          safety: '担忧产品安全问题',
+          refund: '询问退款退货流程',
+          distrust: '质疑官方说明',
+        };
+
+        Object.entries(categoryCount).forEach(([cat, count]) => {
+          if (count >= 2) {
+            result.push({
+              text: hintMap[cat as CommentCategory],
+              count,
+              category: cat as CommentCategory,
+            });
+          }
+        });
+      }
+
+      return result.sort((a, b) => b.count - a.count).slice(0, 4);
+    },
+  };
+});
 
 export default useAppStore;

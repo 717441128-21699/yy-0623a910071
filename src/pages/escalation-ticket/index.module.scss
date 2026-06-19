@@ -267,6 +267,20 @@
   }
 }
 
+.imageBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+  background-color: $color-info-bg;
+  border-radius: $radius-sm;
+
+  .imageText {
+    font-size: 20rpx;
+    color: $color-info;
+    font-weight: $font-weight-medium;
+  }
+}
+
 .compensationBadge {
   display: inline-flex;
   align-items: center;

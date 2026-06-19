@@ -277,12 +277,8 @@ const EscalationTicketPage: React.FC = () => {
                   <View className={classnames(styles.priorityDot, styles[ticket.riskLevel])} />
                   <RiskTag level={ticket.riskLevel} size="sm" text={priorityTextMap[ticket.riskLevel]} />
                   {ticket.hasImage && (
-                    <View style={{
-                      padding: '4rpx 12rpx',
-                      backgroundColor: '#f0f5ff',
-                      borderRadius: 8,
-                    }}>
-                      <Text style={{ fontSize: 20, color: '#165dff' }>含图片</Text>
+                    <View className={styles.imageBadge}>
+                      <Text className={styles.imageText}>含图片</Text>
                     </View>
                   )}
                   {ticket.compensationAmount && (

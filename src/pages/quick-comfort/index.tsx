@@ -79,10 +79,7 @@ const QuickComfortPage: React.FC = () => {
     return getTemplateVersions(selectedTemplateId);
   }, [selectedTemplateId, getTemplateVersions]);
 
-  const selectedVersion = useMemo(() => {
-    if (!selectedVersionId) return null;
-    return templateVersions.find(v => v.id === selectedVersionId) || null;
-  }, [templateVersions, selectedVersionId]);
+
 
   const generatedContent = useMemo(() => {
     if (!selectedTemplate) return '';

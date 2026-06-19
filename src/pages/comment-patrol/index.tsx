@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, Button, Image } from '@tarojs/components';
 import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import classnames from 'classnames';
-import CommentCard from '@/components/CommentCard';
+
 import CategoryTag from '@/components/CategoryTag';
 import RiskTag from '@/components/RiskTag';
 import { shops, products, recallBatches } from '@/data/shops';
@@ -77,6 +77,27 @@ const CommentPatrolPage: React.FC = () => {
       setSelectedComments(new Set());
     }
   }, [batchMode]);
+
+  useEffect(() => {
+    if (!batchMode || selectedComments.size === 0) return;
+
+    const currentCommentIds = new Set(filteredComments.map(c => c.id));
+    let hasChange = false;
+    const newSelected = new Set<string>();
+
+    selectedComments.forEach(id => {
+      if (currentCommentIds.has(id)) {
+        newSelected.add(id);
+      } else {
+        hasChange = true;
+      }
+    });
+
+    if (hasChange) {
+      console.log('[CommentPatrol] 筛选条件变化，清理失效的已选评论:', selectedComments.size - newSelected.size, '条');
+      setSelectedComments(newSelected);
+    }
+  }, [filteredComments, batchMode, selectedComments]);
 
   const hasValidSelection = !!selectedBatchId;
 
@@ -208,9 +229,14 @@ const CommentPatrolPage: React.FC = () => {
 
     const commentsToEscalate = filteredComments.filter(c => selectedComments.has(c.id));
 
+    if (commentsToEscalate.length === 0) {
+      Taro.showToast({ title: '当前列表中无有效选中评论', icon: 'none' });
+      return;
+    }
+
     Taro.showModal({
       title: '批量升级确认',
-      content: `确定要将选中的 ${selectedComments.size} 条评论升级为工单吗？`,
+      content: `确定要将选中的 ${commentsToEscalate.length} 条评论升级为工单吗？`,
       success: (res) => {
         if (res.confirm) {
           const result = batchAddTicketsFromComments(commentsToEscalate);
